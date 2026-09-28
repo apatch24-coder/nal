@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나폴레옹의 두 얼굴: 영웅과 독재자</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Nanum Gothic & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Nanum Gothic', 'Inter', sans-serif; }
+        .tab-transition { transition: all 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col">
+
+    <!-- Student Registration Overlay Modal -->
+    <div id="login-modal" class="fixed inset-0 z-50 bg-stone-950/90 flex items-center justify-center p-4">
+        <div class="bg-stone-900 border border-stone-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-6 text-center">
+            <div class="inline-block bg-amber-500/20 p-4 rounded-2xl text-4xl mb-1">🦅</div>
+            <div>
+                <h2 class="text-2xl font-extrabold text-amber-400">나폴레옹의 두 얼굴</h2>
+                <p class="text-xs text-stone-400 mt-1">중학교 2학년 역사 인물 탐구 인터랙티브 학습앱</p>
+            </div>
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="text-xs text-stone-300 font-bold block mb-1">소속 학교 / 반 번호</label>
+                    <input type="text" id="student-school-info" placeholder="예: 미래중 2학년 3반 15번" class="w-full bg-stone-950 border border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="text-xs text-stone-300 font-bold block mb-1">학생 성명</label>
+                    <input type="text" id="student-name" placeholder="예: 홍길동" class="w-full bg-stone-950 border border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+            <div class="space-y-2">
+                <button onclick="startLearningApp()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-extrabold py-3 rounded-xl transition shadow-lg text-sm">
+                    학습 시작하기 ➔
+                </button>
+                <button onclick="openTeacherModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold py-2 rounded-xl transition text-xs border border-stone-700">
+                    🔒 교사 관리자 모드
+                </button>
+            </div>
+            <p class="text-[11px] text-stone-500">인적사항을 입력하고 탐구 여정을 시작하세요.</p>
+        </div>
+    </div>
+
+    <!-- Teacher Admin Modal -->
+    <div id="teacher-modal" class="fixed inset-0 z-50 bg-stone-950/90 flex items-center justify-center p-4 hidden">
+        <div class="bg-stone-900 border border-stone-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-3">
+                <h3 class="font-extrabold text-amber-400 text-lg">👩‍🏫 교사 관리자 모드 & 구글 시트 연동</h3>
+                <button onclick="closeTeacherModal()" class="text-stone-400 hover:text-white text-sm font-bold">✕ 닫기</button>
+            </div>
+            <div class="space-y-4 text-xs text-stone-300">
+                <p>본 앱은 학생들의 활동 기록(지수 변화, 형성 평가 결과, 자기 주도 성찰 의견)을 수집하여 <strong>Google Sheets</strong> 및 CSV 다운로드로 연동할 수 있습니다.</p>
+                
+                <div class="space-y-1">
+                    <label class="font-bold text-stone-200">구글 시트 웹앱 연동 URL (Google Apps Script Webhook URL)</label>
+                    <input type="text" id="teacher-sheets-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500 text-xs">
+                    <p class="text-[10px] text-stone-500">구글 Apps Script 웹 앱을 배포한 후 URL을 입력하시면 실시간 전송이 활성화됩니다.</p>
+                </div>
+
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 space-y-2">
+                    <div class="flex justify-between items-center font-bold text-stone-200">
+                        <span>📊 현재 수집된 학급 데이터 요약</span>
+                        <span id="admin-student-count" class="text-amber-400">0명 참여</span>
+                    </div>
+                    <div id="admin-data-preview" class="max-h-32 overflow-y-auto text-[11px] text-stone-400 space-y-1">
+                        아직 기록된 학생 데이터가 없습니다.
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button onclick="saveTeacherSettings()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-xl transition text-xs">설정 저장</button>
+                    <button onclick="exportToCSV()" class="flex-1 bg-stone-800 hover:bg-stone-700 text-amber-300 font-bold py-2 rounded-xl transition text-xs border border-stone-700">📥 CSV 다운로드</button>
+                    <button onclick="syncToGoogleSheets()" class="flex-1 bg-blue-700 hover:bg-blue-600 text-white font-bold py-2 rounded-xl transition text-xs">☁️ 구글시트 전송</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-stone-950 border-b border-stone-800 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🦅</span>
+                <div>
+                    <h1 class="text-xl font-extrabold text-amber-500 tracking-wide">나폴레옹의 두 얼굴: 영웅과 독재자</h1>
+                    <p id="student-profile-display" class="text-xs text-stone-400">학습자: 미등록</p>
+                </div>
+            </div>
+            
+            <!-- Realtime Metrics Dashboard & Teacher Toggle -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-4 bg-stone-900 px-4 py-2 rounded-xl border border-stone-800 shadow-inner">
+                    <div class="text-center">
+                        <div class="text-xs text-blue-400 font-bold">🛡️ 혁명 수호 지수</div>
+                        <div id="hero-index" class="text-lg font-extrabold text-blue-300">50%</div>
+                    </div>
+                    <div class="h-8 w-px bg-stone-700"></div>
+                    <div class="text-center">
+                        <div class="text-xs text-red-400 font-bold">👑 독재 지수</div>
+                        <div id="dictator-index" class="text-lg font-extrabold text-red-300">50%</div>
+                    </div>
+                </div>
+                <button onclick="openTeacherModal()" class="bg-stone-800 hover:bg-stone-700 text-stone-300 p-2.5 rounded-xl border border-stone-700 text-xs font-bold transition" title="교사 관리자 모드">
+                    👩‍🏫 관리자
+                </button>
+            </div>
+        </div>
+        
+        <!-- Navigation Tabs -->
+        <nav class="bg-stone-900/90 overflow-x-auto scrollbar-none border-t border-stone-800">
+            <div class="max-w-7xl mx-auto flex px-2 py-2 space-x-1 sm:space-x-2 min-w-max">
+                <button onclick="switchTab(1)" id="tab-btn-1" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold bg-amber-600 text-white shadow">1단계: 성장과 인기 비결</button>
+                <button onclick="switchTab(2)" id="tab-btn-2" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold bg-stone-800 text-stone-300 hover:bg-stone-700">2단계: 정책의 양면성(6선)</button>
+                <button onclick="switchTab(3)" id="tab-btn-3" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold bg-stone-800 text-stone-300 hover:bg-stone-700">3단계: 이미지 정치 & 의견</button>
+                <button onclick="switchTab(4)" id="tab-btn-4" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold bg-stone-800 text-stone-300 hover:bg-stone-700">4단계: 정복 전쟁과 성찰</button>
+                <button onclick="switchTab(5)" id="tab-btn-5" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold bg-stone-800 text-stone-300 hover:bg-stone-700">5단계: 후대의 그림자</button>
+                <button onclick="switchTab(6)" id="tab-btn-6" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold bg-stone-800 text-stone-300 hover:bg-stone-700">6단계: 형성 평가 & 뱃지</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+        <!-- MODULE 1: 성장과 인기 비결 -->
+        <section id="module-1" class="module-content space-y-6">
+            <div class="bg-stone-800/60 border border-stone-700/80 rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl bg-amber-500/20 p-2 rounded-xl">👶</span>
+                    <div>
+                        <h2 class="text-xl font-bold text-amber-400">1단계: [역사적 선택 체험] 촌뜨기 소년, 영웅이 되다</h2>
+                        <p class="text-sm text-stone-400">코르시카 섬의 이방인에서 프랑스 국민의 영웅으로 부상한 과정과 어린 시절의 특징을 살펴봅니다.</p>
+                    </div>
+                </div>
+
+                <!-- Childhood Characteristics Box -->
+                <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-3">
+                    <h3 class="font-bold text-amber-300 flex items-center gap-2"><span>🌱</span> 소년 나폴레옹의 특징과 역경 극복</h3>
+                    <p class="text-sm text-stone-300 leading-relaxed">
+                        1769년 코르시카 섬(제노바 공국에서 프랑스로 편입된 지 1년 만에 탄생)에서 태어난 나폴레옹은 서툰 프랑스어 엑센트와 철자 실수 때문에 사관학교에서 친구들에게 <strong>‘촌뜨기’</strong>로 놀림을 받았습니다. 하지만 비범한 독서량과 수학적 재능, 강인한 집념으로 이 모든 역경을 극복해 나갔습니다. 황제가 되어서도 철자 실수가 잦아 항상 옆에 <strong>서기(Scribe)</strong>를 두고 대필해야 했다는 일화는 유명합니다.
+                    </p>
+                </div>
+
+                <!-- Popularity Rise Box -->
+                <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-3">
+                    <h3 class="font-bold text-amber-300 flex items-center gap-2"><span>⭐</span> 프랑스 국민의 인기를 얻게 된 과정</h3>
+                    <p class="text-sm text-stone-300 leading-relaxed">
+                        프랑스 혁명 이후 혼란과 외세의 침략 속에서 국민들은 안정을 갈구했습니다. 이때 나폴레옹은 <strong>1793년 툴롱 탈환전</strong>에서 뛰어난 포병 전술로 승리를 이끌어 준장으로 승진하였고, 이탈리아 원정과 이집트 원정을 통해 연이어 대승을 거두며 프랑스 국민들에게 <strong>구국의 영웅</strong>으로 각인되었습니다. 이후 1799년 18브뤼메르 쿠데타로 통령 정부를 수립하며 권력의 정상에 올랐습니다.
+                    </p>
+                </div>
+
+                <!-- Module 1 Interactive Multi-Question Check Quiz (Childhood & Popularity) -->
+                <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-amber-300 flex items-center gap-2"><span>📝</span> 1단계 확인 학습: 소년 나폴레옹과 영웅 등극</h3>
+                        <span id="mod1-quiz-progress" class="text-xs text-amber-400 font-bold">문제 1 / 2</span>
+                    </div>
+                    <div id="mod1-quiz-card" class="space-y-3">
+                        <div id="mod1-q-text" class="text-sm font-bold text-stone-100">질문 내용</div>
+                        <div id="mod1-options" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                        <div id="mod1-feedback-box" class="text-xs p-3 rounded-lg hidden font-medium"></div>
+                    </div>
+                </div>
+
+                <!-- Interactive Choice Simulation -->
+                <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-4">
+                    <h3 class="font-bold text-stone-200">⚖️ 역사 시뮬레이션: 1804년 국민투표 조작 결단</h3>
+                    <p class="text-xs text-stone-400">당신이 나폴레옹의 참모라면 1804년 황제즉위 국민투표 결과를 어떻게 처리하시겠습니까?</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button onclick="handleMod1Choice('hero')" class="p-4 rounded-xl bg-stone-800 hover:bg-blue-950/40 border border-stone-700 hover:border-blue-500 text-left transition">
+                            <div class="font-bold text-blue-400 mb-1">원칙 준수 (실측 공개)</div>
+                            <p class="text-xs text-stone-400">비록 표가 부족하더라도 민주적 절차와 실제 투표 결과를 그대로 발표한다.</p>
+                        </button>
+                        <button onclick="handleMod1Choice('dictator')" class="p-4 rounded-xl bg-stone-800 hover:bg-red-950/40 border border-stone-700 hover:border-red-500 text-left transition">
+                            <div class="font-bold text-red-400 mb-1">권력 장악 (투표 조작)</div>
+                            <p class="text-xs text-stone-400">강력한 황제권 확립을 위해 육·해군 찬성표(실측 12만➔40만 등)를 대폭 부풀린다.</p>
+                        </button>
+                    </div>
+                    <div id="mod1-feedback" class="text-sm text-amber-300 font-medium hidden p-3 rounded-lg bg-amber-950/30 border border-amber-900/50"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 2: 정책의 양면성 탐구 (6개 확장) -->
+        <section id="module-2" class="module-content hidden space-y-6">
+            <div class="bg-stone-800/60 border border-stone-700/80 rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-3xl bg-amber-500/20 p-2 rounded-xl">⚖️</span>
+                    <div>
+                        <h2 class="text-xl font-bold text-amber-400">2단계: [정책의 양면성 탐구] 6대 핵심 정책 분석</h2>
+                        <p class="text-sm text-stone-400">나폴레옹의 6가지 주요 정책 카드를 분류하여 영웅적 업적과 독재적 그림자를 입체적으로 비교해 보세요.</p>
+                    </div>
+                </div>
+
+                <!-- Policy Cards Grid (6 items) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <!-- Policy 1 -->
+                    <div class="bg-stone-900 p-4 rounded-xl border border-stone-700 flex flex-col justify-between">
+                        <div>
+                            <span class="bg-blue-950 text-blue-400 text-xs px-2 py-1 rounded font-bold">법 제도</span>
+                            <h3 class="font-bold text-stone-100 mt-2">『나폴레옹 법전』</h3>
+                            <p class="text-xs text-stone-300 mt-1">법적 평등과 사유 재산권을 보장하여 근대 시민 사회의 기틀을 마련함.</p>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="classifyPolicy('legal', 'hero')" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded font-bold transition">영웅 (업적)</button>
+                            <button onclick="classifyPolicy('legal', 'dictator')" class="flex-1 bg-red-600 hover:bg-red-500 text-xs py-1.5 rounded font-bold transition">독재자 (그림자)</button>
+                        </div>
+                    </div>
+
+                    <!-- Policy 2 -->
+                    <div class="bg-stone-900 p-4 rounded-xl border border-stone-700 flex flex-col justify-between">
+                        <div>
+                            <span class="bg-red-950 text-red-400 text-xs px-2 py-1 rounded font-bold">인권의 역설</span>
+                            <h3 class="font-bold text-stone-100 mt-2">여성 권리 제한 (제1549조)</h3>
+                            <p class="text-xs text-stone-300 mt-1">결혼 기간 동안 남편만이 재산 관리권을 독점하도록 규정함.</p>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="classifyPolicy('rights', 'hero')" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded font-bold transition">영웅 (업적)</button>
+                            <button onclick="classifyPolicy('rights', 'dictator')" class="flex-1 bg-red-600 hover:bg-red-500 text-xs py-1.5 rounded font-bold transition">독재자 (그림자)</button>
+                        </div>
+                    </div>
+
+                    <!-- Policy 3 -->
+                    <div class="bg-stone-900 p-4 rounded-xl border border-stone-700 flex flex-col justify-between">
+                        <div>
+                            <span class="bg-amber-950 text-amber-400 text-xs px-2 py-1 rounded font-bold">행정/교육</span>
+                            <h3 class="font-bold text-stone-100 mt-2">공교육 & 프레페 제도</h3>
+                            <p class="text-xs text-stone-300 mt-1">국민 교육 제도로 인재를 양성하고 도지사를 파견해 중앙집권 강화.</p>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="classifyPolicy('edu', 'hero')" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded font-bold transition">영웅 (업적)</button>
+                            <button onclick="classifyPolicy('edu', 'dictator')" class="flex-1 bg-red-600 hover:bg-red-500 text-xs py-1.5 rounded font-bold transition">독재자 (그림자)</button>
+                        </div>
+                    </div>
+
+                    <!-- Policy 4 -->
+                    <div class="bg-stone-900 p-4 rounded-xl border border-stone-700 flex flex-col justify-between">
+                        <div>
+                            <span class="bg-emerald-950 text-emerald-400 text-xs px-2 py-1 rounded font-bold">경제 안정</span>
+                            <h3 class="font-bold text-stone-100 mt-2">프랑스 중앙은행 설립</h3>
+                            <p class="text-xs text-stone-300 mt-1">급등하는 물가를 안정시키고 국가 재정을 건전화하여 산업 발전을 촉진함.</p>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="classifyPolicy('bank', 'hero')" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded font-bold transition">영웅 (업적)</button>
+                            <button onclick="classifyPolicy('bank', 'dictator')" class="flex-1 bg-red-600 hover:bg-red-500 text-xs py-1.5 rounded font-bold transition">독재자 (그림자)</button>
+                        </div>
+                    </div>
+
+                    <!-- Policy 5 -->
+                    <div class="bg-stone-900 p-4 rounded-xl border border-stone-700 flex flex-col justify-between">
+                        <div>
+                            <span class="bg-purple-950 text-purple-400 text-xs px-2 py-1 rounded font-bold">종교 정책</span>
+                            <h3 class="font-bold text-stone-100 mt-2">가톨릭 화해 협약 (정교협약)</h3>
+                            <p class="text-xs text-stone-300 mt-1">로마 교황과의 협약을 통해 혁명으로 갈라졌던 가톨릭 세력과의 갈등을 봉합함.</p>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="classifyPolicy('church', 'hero')" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded font-bold transition">영웅 (업적)</button>
+                            <button onclick="classifyPolicy('church', 'dictator')" class="flex-1 bg-red-600 hover:bg-red-500 text-xs py-1.5 rounded font-bold transition">독재자 (그림자)</button>
+                        </div>
+                    </div>
+
+                    <!-- Policy 6 -->
+                    <div class="bg-stone-900 p-4 rounded-xl border border-stone-700 flex flex-col justify-between">
+                        <div>
+                            <span class="bg-rose-950 text-rose-400 text-xs px-2 py-1 rounded font-bold">식민지 잔혹사</span>
+                            <h3 class="font-bold text-stone-100 mt-2">아이티 노예제 부활 & 학살</h3>
+                            <p class="text-xs text-stone-300 mt-1">혁명의 자유 이념을 배반하고 식민지 노예제를 부활시켜 대규모 학살과 수장을 자행함.</p>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="classifyPolicy('slavery', 'hero')" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1.5 rounded font-bold transition">영웅 (업적)</button>
+                            <button onclick="classifyPolicy('slavery', 'dictator')" class="flex-1 bg-red-600 hover:bg-red-500 text-xs py-1.5 rounded font-bold transition">독재자 (그림자)</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="mod2-status" class="text-center text-sm font-bold text-amber-400 bg-stone-900 py-3 rounded-xl border border-stone-700">6개 정책 카드를 모두 분류하여 양면성을 완성해보세요! (현재 0/6)</div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: 이미지 정치와 예술 (실제 그림 주소 & 직접 넣기 가이드 포함) -->
+        <section id="module-3" class="module-content hidden space-y-6">
+            <div class="bg-stone-800/60 border border-stone-700/80 rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl bg-amber-500/20 p-2 rounded-xl">🎨</span>
+                    <div>
+                        <h2 class="text-xl font-bold text-amber-400">3단계: [이미지 정치와 예술] 프로파간다의 기술과 나의 생각</h2>
+                        <p class="text-sm text-stone-400">실제 명화와 사료를 확인하고, 아래 입력창에 웹 이미지 주소(URL)를 직접 넣어 자신만의 분석을 추가하거나 의견을 적어보세요.</p>
+                    </div>
+                </div>
+
+                <!-- Custom Image URL Loader helper for students -->
+                <div class="bg-stone-900 p-4 rounded-xl border border-stone-700 flex flex-col sm:flex-row gap-3 items-center">
+                    <div class="text-xs text-stone-300 font-bold">💡 내가 찾은 그림 직접 추가하기:</div>
+                    <input type="text" id="custom-image-url" placeholder="웹상의 이미지 주소(URL)를 입력하세요" class="flex-grow bg-stone-950 border border-stone-700 rounded-lg px-3 py-1.5 text-xs text-stone-100 focus:outline-none focus:border-amber-500">
+                    <button onclick="loadCustomImage()" class="bg-amber-600 hover:bg-amber-500 px-4 py-1.5 rounded-lg text-xs font-bold text-white transition whitespace-nowrap">그림 적용하기</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Art vs Reality Card -->
+                    <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <h3 class="font-bold text-amber-300">🖼️ 다비드의 명화 vs 진실</h3>
+                            <!-- Real Image Frame with Fallback & Custom ID -->
+                            <div class="rounded-lg overflow-hidden border border-stone-700 bg-stone-950 h-52 flex items-center justify-center relative shadow-inner">
+                                <img id="dynamic-img-art" src="https://upload.wikimedia.org/wikipedia/commons/b/b2/Jacques-Louis_David_-_Napoleon_Crossing_the_Alps_-_Malmaison.jpg" alt="Napoleon Crossing the Alps" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x400/292524/e7e5e4?text=Napoleon+Crossing+Alps'">
+                                <span class="absolute bottom-2 right-2 bg-stone-900/90 px-2 py-1 rounded text-[10px] text-stone-300">다비드作 (알프스 산맥을 넘는 나폴레옹)</span>
+                            </div>
+                            <p class="text-xs text-stone-300 leading-relaxed">
+                                화면 속 백마를 탄 영웅적 모습과 달리, 실제 나폴레옹은 혹한 속에서 <strong>노새</strong>를 타고 수행원의 안내를 받아 이동했습니다. 또한 신문사를 73개에서 4개로 통폐합하고 카페를 검열했습니다.
+                            </p>
+                        </div>
+                        <!-- User Commentary Box -->
+                        <div class="space-y-2 pt-3 border-t border-stone-800">
+                            <label class="text-xs text-amber-400 font-bold block">✍️ 이 명화의 프로파간다(정치적 선전)에 대한 나의 생각:</label>
+                            <textarea id="comment-art" rows="2" placeholder="이 명화의 연출과 정치적 선전에 대한 생각을 자유롭게 적어보세요." class="w-full bg-stone-950 border border-stone-700 rounded-lg p-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500"></textarea>
+                            <button onclick="saveUserComment('art')" class="bg-stone-800 hover:bg-stone-700 px-3 py-1.5 rounded text-xs font-bold text-amber-300 border border-stone-700 transition">의견 저장하기</button>
+                            <span id="save-msg-art" class="text-[11px] text-green-400 hidden ml-2">저장 완료!</span>
+                        </div>
+                    </div>
+
+                    <!-- Beethoven & Hand in Vest Card -->
+                    <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <h3 class="font-bold text-amber-300">🎵 베토벤의 분노와 '조끼 속 오른손'</h3>
+                            <!-- Real Image Frame with Fallback -->
+                            <div class="rounded-lg overflow-hidden border border-stone-700 bg-stone-950 h-52 flex items-center justify-center relative shadow-inner">
+                                <img id="dynamic-img-beethoven" src="https://upload.wikimedia.org/wikipedia/commons/2/23/Ingres%2C_Napoleon_on_his_Imperial_Throne_%281806%29.jpg" alt="Napoleon Hand in Vest" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x400/292524/e7e5e4?text=Napoleon+Hand+in+Vest'">
+                                <span class="absolute bottom-2 right-2 bg-stone-900/90 px-2 py-1 rounded text-[10px] text-stone-300">조끼 속 오른손 포즈 (절제된 지도자 상징)</span>
+                            </div>
+                            <p class="text-xs text-stone-300 leading-relaxed">
+                                베토벤은 해방자 나폴레옹에게 실망하여 영웅 교향곡 이름을 긁어버렸습니다. 또한 '조끼 속 오른손' 포즈는 조선의 <strong>김옥균, 박영효</strong> 등 개화파 인사들에게도 서구 근대 지도자의 상징으로 모방되었습니다.
+                            </p>
+                        </div>
+                        <!-- User Commentary Box -->
+                        <div class="space-y-2 pt-3 border-t border-stone-800">
+                            <label class="text-xs text-amber-400 font-bold block">✍️ 베토벤의 행동과 지도자 이미지에 대한 나의 생각:</label>
+                            <textarea id="comment-beethoven" rows="2" placeholder="베토벤의 행동이나 지도자 이미지에 대한 생각을 자유롭게 적어보세요." class="w-full bg-stone-950 border border-stone-700 rounded-lg p-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500"></textarea>
+                            <button onclick="saveUserComment('beethoven')" class="bg-stone-800 hover:bg-stone-700 px-3 py-1.5 rounded text-xs font-bold text-amber-300 border border-stone-700 transition">의견 저장하기</button>
+                            <span id="save-msg-beethoven" class="text-[11px] text-green-400 hidden ml-2">저장 완료!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: 정복 전쟁의 명암 (각 사건별 본인 생각 작성 - NO PRESET EXAMPLES) -->
+        <section id="module-4" class="module-content hidden space-y-6">
+            <div class="bg-stone-800/60 border border-stone-700/80 rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl bg-amber-500/20 p-2 rounded-xl">⚔️</span>
+                    <div>
+                        <h2 class="text-xl font-bold text-amber-400">4단계: [정복 전쟁의 명암] 사건별 심층 성찰</h2>
+                        <p class="text-sm text-stone-400">러시아 원정, 에스파냐 학살, 그리고 비박의 유래 각각에 대해 자신의 생각을 빈칸 없이 자유롭게 작성해 보세요.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Campaign 1 -->
+                    <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 flex flex-col justify-between space-y-4">
+                        <div class="space-y-2">
+                            <span class="bg-blue-950 text-blue-400 text-[10px] px-2 py-0.5 rounded font-bold">대외 정복의 실패</span>
+                            <h3 class="font-bold text-amber-300 text-sm">❄️ 러시아 원정 괴멸</h3>
+                            <p class="text-xs text-stone-300 leading-relaxed">
+                                대륙 봉쇄령을 어긴 러시아를 응징하려다 영하 20도의 강추위와 청야 작전(화공)으로 50만 대군이 참혹하게 무너진 사건입니다.
+                            </p>
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-stone-800">
+                            <label class="text-xs text-amber-400 font-bold block">✍️ 러시아 원정에 대한 내 생각:</label>
+                            <textarea id="opinion-russia" rows="3" placeholder="러시아 원정에 대한 자신의 생각을 작성해 보세요." class="w-full bg-stone-950 border border-stone-700 rounded-lg p-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500"></textarea>
+                            <button onclick="saveCampaignOpinion('russia')" class="bg-stone-800 hover:bg-stone-700 w-full py-1.5 rounded text-xs font-bold text-amber-300 border border-stone-700 transition">의견 저장</button>
+                            <span id="msg-russia" class="text-[10px] text-green-400 hidden block text-center">저장됨!</span>
+                        </div>
+                    </div>
+
+                    <!-- Campaign 2 -->
+                    <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 flex flex-col justify-between space-y-4">
+                        <div class="space-y-2">
+                            <span class="bg-red-950 text-red-400 text-[10px] px-2 py-0.5 rounded font-bold">민중의 저항</span>
+                            <h3 class="font-bold text-red-400 text-sm">🎨 고야의 '5월 3일의 학살'</h3>
+                            <p class="text-xs text-stone-300 leading-relaxed">
+                                에스파냐 민중을 무차별 학살한 프랑스군의 잔혹상을 고발하며, 역설적으로 유럽 각국에 '민족주의' 저항 정신을 불붙였습니다.
+                            </p>
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-stone-800">
+                            <label class="text-xs text-amber-400 font-bold block">✍️ 에스파냐 학살과 저항에 대한 내 생각:</label>
+                            <textarea id="opinion-spain" rows="3" placeholder="에스파냐 학살과 저항에 대한 자신의 생각을 작성해 보세요." class="w-full bg-stone-950 border border-stone-700 rounded-lg p-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500"></textarea>
+                            <button onclick="saveCampaignOpinion('spain')" class="bg-stone-800 hover:bg-stone-700 w-full py-1.5 rounded text-xs font-bold text-amber-300 border border-stone-700 transition">의견 저장</button>
+                            <span id="msg-spain" class="text-[10px] text-green-400 hidden block text-center">저장됨!</span>
+                        </div>
+                    </div>
+
+                    <!-- Campaign 3 -->
+                    <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 flex flex-col justify-between space-y-4">
+                        <div class="space-y-2">
+                            <span class="bg-amber-950 text-amber-400 text-[10px] px-2 py-0.5 rounded font-bold">군대의 일상</span>
+                            <h3 class="font-bold text-amber-300 text-sm">⛺ 비박(Bivouac)의 유래</h3>
+                            <p class="text-xs text-stone-300 leading-relaxed">
+                                나폴레옹 군대가 텐트 없이 야외 바닥에서 잠을 자며 신속하게 기동하던 전술에서 유래하여 오늘날 캠핑 용어로 남게 되었습니다.
+                            </p>
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-stone-800">
+                            <label class="text-xs text-amber-400 font-bold block">✍️ 비박 문화와 군대 생활에 대한 내 생각:</label>
+                            <textarea id="opinion-bivouac" rows="3" placeholder="비박 문화와 군대 생활에 대한 자신의 생각을 작성해 보세요." class="w-full bg-stone-950 border border-stone-700 rounded-lg p-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500"></textarea>
+                            <button onclick="saveCampaignOpinion('bivouac')" class="bg-stone-800 hover:bg-stone-700 w-full py-1.5 rounded text-xs font-bold text-amber-300 border border-stone-700 transition">의견 저장</button>
+                            <span id="msg-bivouac" class="text-[10px] text-green-400 hidden block text-center">저장됨!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 5: 후대의 그림자 -->
+        <section id="module-5" class="module-content hidden space-y-6">
+            <div class="bg-stone-800/60 border border-stone-700/80 rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl bg-amber-500/20 p-2 rounded-xl">👤</span>
+                    <div>
+                        <h2 class="text-xl font-bold text-amber-400">5단계: [후대의 그림자] 독재의 계보와 AI 역사 재판소</h2>
+                        <p class="text-sm text-stone-400">나폴레옹의 독재 모델이 히틀러로 이어진 역사적 계보를 살피고 제미나이 판사와 토론합니다.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-3">
+                        <h3 class="font-bold text-amber-300">🏛️ 히틀러와의 연결고리</h3>
+                        <p class="text-xs text-stone-300 leading-relaxed">
+                            훗날 아돌프 히틀러는 나폴레옹을 자신의 롤모델로 삼았습니다. 프랑스 파리를 점령한 직후 앵발리드(나폴레옹의 묘)를 직접 방문하였으며, 나폴레옹 아들(나폴레옹 2세)의 유해를 파리에서 비엔나로 이장해 주는 등 <strong>자신의 독재와 침략을 정당화하는 도구</strong>로 나폴레옹의 이미지를 적극 활용했습니다.
+                        </p>
+                    </div>
+
+                    <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-3">
+                        <h3 class="font-bold text-amber-300">📜 나폴레옹의 회고록과 토론 가이드</h3>
+                        <p class="text-xs text-stone-300 leading-relaxed">
+                            나폴레옹은 말년 세인트헬레나 섬에서의 회고록에서 다음과 같이 주장했습니다:<br>
+                            <em class="text-amber-200 block mt-2 p-2 bg-stone-800 rounded border border-stone-700">"내 독재는 프랑스를 혼란과 파멸에서 구하기 위한 불가피한 선택이었다."</em>
+                        </p>
+                        <p class="text-xs text-stone-400">
+                            <strong>비판적 토론 가이드:</strong> 과연 국가의 위기와 혼란을 극복하기 위해 민주적 절차를 무시하고 권력을 독점하는 행위는 정당화될 수 있을까요?
+                        </p>
+                    </div>
+                </div>
+
+                <!-- AI History Tribunal Mini Chat inside Module 5 -->
+                <div class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-4">
+                    <h3 class="font-bold text-amber-400 text-sm">⚖️ AI 역사 재판소 (제미나이 판사와 토론하기)</h3>
+                    <p class="text-xs text-stone-400">"나폴레옹은 혁명의 수호자인가, 독재자인가?" 당신의 생각을 적어 판사와 토론해 보세요.</p>
+                    
+                    <div id="chat-container" class="bg-stone-950 h-64 rounded-xl p-4 overflow-y-auto border border-stone-800 space-y-3 flex flex-col">
+                        <div class="bg-stone-800 p-3 rounded-lg max-w-[80%] text-xs text-stone-200 self-start border border-stone-700">
+                            🏛️ <strong>역사 재판소 판사:</strong> 안녕하세요! 나폴레옹의 독재와 히틀러로 이어진 계보, 혹은 나폴레옹의 업적에 대한 당신의 생각을 구체적 역사적 사실과 함께 말씀해 주세요!
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="user-chat-input" placeholder="예: 나폴레옹은 법전을 만들었지만 독재와 투표 조작을 했으므로 비판받아야 합니다." class="flex-grow bg-stone-950 border border-stone-700 rounded-xl px-4 py-2 text-sm text-stone-100 focus:outline-none focus:border-amber-500">
+                        <button onclick="sendChatMessage()" class="bg-amber-600 hover:bg-amber-500 px-5 py-2 rounded-xl text-sm font-bold text-white transition">의견 제출</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 6: 학습 정리 및 형성 평가 -->
+        <section id="module-6" class="module-content hidden space-y-6">
+            <div class="bg-stone-800/60 border border-stone-700/80 rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl bg-amber-500/20 p-2 rounded-xl">📝</span>
+                    <div>
+                        <h2 class="text-xl font-bold text-amber-400">6단계: [학습 정리 및 형성 평가] (총 10문항)</h2>
+                        <p class="text-sm text-stone-400">객관식 5문항, 주관식 2문항, 서술형 3문항의 형성 평가를 완료하고 뱃지를 획득하세요!</p>
+                    </div>
+                </div>
+
+                <!-- Quiz Container -->
+                <div id="quiz-box" class="bg-stone-900 p-5 rounded-xl border border-stone-700 space-y-4">
+                    <div class="flex justify-between items-center text-xs text-amber-400 font-bold">
+                        <span id="quiz-progress">문제 1 / 10</span>
+                        <span>형성 평가 심화 코스</span>
+                    </div>
+                    <h3 id="quiz-question" class="font-bold text-stone-100 text-base">질문 내용</h3>
+                    
+                    <!-- Options for Multiple Choice -->
+                    <div id="quiz-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+                    <!-- Input for Short/Essay Answer -->
+                    <div id="quiz-text-input-container" class="hidden space-y-3">
+                        <textarea id="quiz-user-input" rows="3" placeholder="답안을 구체적으로 입력하세요..." class="w-full bg-stone-950 border border-stone-700 rounded-xl p-3 text-sm text-stone-100 focus:outline-none focus:border-amber-500"></textarea>
+                        <button onclick="submitTextAnswer()" class="bg-amber-600 hover:bg-amber-500 px-5 py-2 rounded-xl text-sm font-bold text-white transition">답안 제출하기</button>
+                    </div>
+
+                    <div id="quiz-feedback" class="text-sm font-medium hidden p-3 rounded-lg"></div>
+                    
+                    <div class="flex justify-end pt-2">
+                        <button id="next-quiz-btn" onclick="nextQuizItem()" class="bg-stone-800 hover:bg-stone-700 px-4 py-2 rounded-lg text-xs font-bold text-stone-200 hidden border border-stone-700">다음 문제 ➔</button>
+                    </div>
+                </div>
+
+                <!-- Badge Reward Box -->
+                <div id="badge-box" class="bg-stone-900 p-5 rounded-xl border border-stone-700 text-center hidden space-y-3">
+                    <span class="text-4xl">👑</span>
+                    <h3 id="badge-congrats-title" class="text-lg font-extrabold text-amber-400">축하합니다! 형성 평가를 모두 완료했습니다!</h3>
+                    <p class="text-xs text-stone-300">2014년 한국 하림 그룹이 26억 원에 낙찰받은 실화의 주인공, <strong>'26억 가치의 황금 이각모 뱃지'</strong>와 <strong>'민법전 뱃지'</strong>가 수여되었습니다!</p>
+                    <div class="flex justify-center gap-4 pt-2">
+                        <span class="bg-amber-950 text-amber-300 px-4 py-2 rounded-xl text-xs font-bold border border-amber-800">✨ 26억 황금 이각모 뱃지 획득</span>
+                        <span class="bg-blue-950 text-blue-300 px-4 py-2 rounded-xl text-xs font-bold border border-blue-800">📜 민법전 뱃지 획득</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-stone-950 border-t border-stone-800 text-center py-4 text-xs text-stone-500">
+        중학교 2학년 역사 교육과정 연계 인터랙티브 학습앱 &bull; 나폴레옹의 두 얼굴 (심화 확장판)
+    </footer>
+
+    <script>
+        let heroIndex = 50;
+        let dictatorIndex = 50;
+        let studentInfo = { schoolInfo: "", name: "" };
+        
+        // Student session record for teacher admin and Google Sheets
+        let studentRecord = {
+            timestamp: "",
+            schoolInfo: "",
+            name: "",
+            heroIndex: 50,
+            dictatorIndex: 50,
+            mod1QuizPassed: false,
+            policiesClassified: 0,
+            commentArt: "",
+            commentBeethoven: "",
+            opinionRussia: "",
+            opinionSpain: "",
+            opinionBivouac: "",
+            quizScore: 0,
+            completed: false
+        };
+
+        // Load teacher Google Sheets webhook URL from localStorage if configured
+        let googleSheetsWebhookUrl = localStorage.getItem('napoleon_sheets_url') || "";
+
+        function startLearningApp() {
+            const schoolInfoInput = document.getElementById('student-school-info').value.trim();
+            const nameInput = document.getElementById('student-name').value.trim();
+
+            if (!schoolInfoInput || !nameInput) {
+                alert("학교/반 번호와 학생 성명을 모두 입력해 주세요!");
+                return;
+            }
+
+            studentInfo.schoolInfo = schoolInfoInput;
+            studentInfo.name = nameInput;
+            studentRecord.schoolInfo = schoolInfoInput;
+            studentRecord.name = nameInput;
+            studentRecord.timestamp = new Date().toLocaleString();
+
+            document.getElementById('student-profile-display').innerText = `학습자: ${schoolInfoInput} ${nameInput}`;
+            document.getElementById('badge-congrats-title').innerText = `축하합니다, ${nameInput}님! 형성 평가를 모두 완료했습니다!`;
+            document.getElementById('login-modal').classList.add('hidden');
+            
+            saveRecordLocally();
+        }
+
+        function openTeacherModal() {
+            document.getElementById('teacher-sheets-url').value = googleSheetsWebhookUrl;
+            updateAdminPreview();
+            document.getElementById('teacher-modal').classList.remove('hidden');
+        }
+
+        function closeTeacherModal() {
+            document.getElementById('teacher-modal').classList.add('hidden');
+        }
+
+        function saveTeacherSettings() {
+            const url = document.getElementById('teacher-sheets-url').value.trim();
+            googleSheetsWebhookUrl = url;
+            localStorage.setItem('napoleon_sheets_url', url);
+            alert("교사 관리자 설정이 저장되었습니다!");
+            closeTeacherModal();
+        }
+
+        function saveRecordLocally() {
+            studentRecord.heroIndex = heroIndex;
+            studentRecord.dictatorIndex = dictatorIndex;
+            
+            let allRecords = JSON.parse(localStorage.getItem('napoleon_student_records') || "[]");
+            // Find if student exists and update, or push new
+            const existingIdx = allRecords.findIndex(r => r.schoolInfo === studentRecord.schoolInfo && r.name === studentRecord.name);
+            if (existingIdx >= 0) {
+                allRecords[existingIdx] = studentRecord;
+            } else if (studentRecord.name) {
+                allRecords.push(studentRecord);
+            }
+            localStorage.setItem('napoleon_student_records', JSON.stringify(allRecords));
+        }
+
+        function updateAdminPreview() {
+            let allRecords = JSON.parse(localStorage.getItem('napoleon_student_records') || "[]");
+            document.getElementById('admin-student-count').innerText = `${allRecords.length}명 참여`;
+            const previewContainer = document.getElementById('admin-data-preview');
+            if (allRecords.length === 0) {
+                previewContainer.innerHTML = "아직 기록된 학생 데이터가 없습니다.";
+                return;
+            }
+            previewContainer.innerHTML = allRecords.map((r, i) => `
+                <div class="bg-stone-900 p-2 rounded border border-stone-800 flex justify-between items-center">
+                    <span>${i+1}. [${r.schoolInfo}] ${r.name} (혁명:${r.heroIndex}%, 독재:${r.dictatorIndex}%)</span>
+                    <span class="text-amber-400">${r.completed ? '완료' : '진행중'}</span>
+                </div>
+            `).join('');
+        }
+
+        function exportToCSV() {
+            let allRecords = JSON.parse(localStorage.getItem('napoleon_student_records') || "[]");
+            if (allRecords.length === 0) {
+                alert("내보낼 학생 데이터가 없습니다.");
+                return;
+            }
+            let csv = "\uFEFF학교/반,성명,혁명수호지수,독재지수,정책분류수,미술의견,베토벤의견,러시아의견,에스파냐의견,비박의견,퀴즈점수,완료여부,시각\n";
+            allRecords.forEach(r => {
+                csv += `"${r.schoolInfo}","${r.name}",${r.heroIndex}%,${r.dictatorIndex}%,${r.policiesClassified}/6,"${(r.commentArt||'').replace(/"/g,'""')}","${(r.commentBeethoven||'').replace(/"/g,'""')}","${(r.opinionRussia||'').replace(/"/g,'""')}","${(r.opinionSpain||'').replace(/"/g,'""')}","${(r.opinionBivouac||'').replace(/"/g,'""')}",${r.quizScore},${r.completed ? 'O' : 'X'},"${r.timestamp}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `나폴레옹학습결과_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+        }
+
+        async function syncToGoogleSheets() {
+            if (!googleSheetsWebhookUrl) {
+                alert("먼저 구글 Apps Script 웹앱 연동 URL을 입력하고 저장해 주세요!");
+                return;
+            }
+            let allRecords = JSON.parse(localStorage.getItem('napoleon_student_records') || "[]");
+            if (allRecords.length === 0) {
+                alert("전송할 학생 데이터가 없습니다.");
+                return;
+            }
+
+            try {
+                // Send records to Google Sheets web app webhook
+                const response = await fetch(googleSheetsWebhookUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', // standard for GAS web apps
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ records: allRecords })
+                });
+                alert("구글 시트로 데이터 전송 요청이 완료되었습니다! (구글 시트에서 행이 추가되었는지 확인하세요)");
+            } catch (err) {
+                console.error(err);
+                alert("구글 시트 전송 중 오류가 발생했습니다. 웹 앱 URL 설정을 다시 확인해 주세요.");
+            }
+        }
+
+        function updateIndices(heroChange, dictatorChange) {
+            heroIndex = Math.max(0, Math.min(100, heroIndex + heroChange));
+            dictatorIndex = Math.max(0, Math.min(100, dictatorIndex + dictatorChange));
+            document.getElementById('hero-index').innerText = heroIndex + '%';
+            document.getElementById('dictator-index').innerText = dictatorIndex + '%';
+            saveRecordLocally();
+        }
+
+        // Tab Navigation
+        function switchTab(step) {
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`module-${i}`).classList.add('hidden');
+                document.getElementById(`tab-btn-${i}`).classList.remove('bg-amber-600', 'text-white', 'shadow');
+                document.getElementById(`tab-btn-${i}`).classList.add('bg-stone-800', 'text-stone-300');
+            }
+            document.getElementById(`module-${step}`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${step}`).classList.remove('bg-stone-800', 'text-stone-300');
+            document.getElementById(`tab-btn-${step}`).classList.add('bg-amber-600', 'text-white', 'shadow');
+        }
+
+        // Module 1 Multi-Question Quiz Data (Childhood & Popularity Rise)
+        const mod1QuizList = [
+            {
+                q: "Q1. 소년 나폴레옹이 사관학교 시절 친구들에게 '촌뜨기'로 놀림받게 된 결정적 이유가 아닌 것은?",
+                options: ["코르시카 방언 엑센트", "서툰 프랑스어 철자 실수", "거만한 귀족 가문 출신 태도", "코르시카 섬 출신 이방인 배경"],
+                answer: 2
+            },
+            {
+                q: "Q2. 혼란스러운 프랑스에서 나폴레옹이 국민적 인기를 얻으며 영웅으로 부상하게 된 계기로 가장 적절한 것은?",
+                options: ["1793년 툴롱 탈환전 승리 및 연이은 원정 승전", "루이 16세를 직접 변호하여 사면시킨 사건", "프랑스 왕실의 적통 왕위 계승권 획득", "영국과의 무역 협상 직접 체결 성공"],
+                answer: 0
+            }
+        ];
+        let mod1QuizIdx = 0;
+
+        function loadMod1Quiz() {
+            const qObj = mod1QuizList[mod1QuizIdx];
+            document.getElementById('mod1-quiz-progress').innerText = `문제 ${mod1QuizIdx + 1} / ${mod1QuizList.length}`;
+            document.getElementById('mod1-q-text').innerText = qObj.q;
+            const optContainer = document.getElementById('mod1-options');
+            optContainer.innerHTML = '';
+            const fb = document.getElementById('mod1-feedback-box');
+            fb.classList.add('hidden');
+
+            qObj.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "p-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-xs text-stone-200 border border-stone-700 text-left transition font-bold";
+                btn.innerText = opt;
+                btn.onclick = () => checkMod1Quiz(idx, qObj.answer);
+                optContainer.appendChild(btn);
+            });
+        }
+
+        function checkMod1Quiz(selected, correct) {
+            const fb = document.getElementById('mod1-feedback-box');
+            fb.classList.remove('hidden');
+            if (selected === correct) {
+                fb.className = "text-xs p-3 rounded-lg bg-green-950/40 text-green-300 border border-green-800 font-medium";
+                fb.innerHTML = "🎉 정답입니다! 소년 시절의 역경 극복과 영웅 등극 과정을 정확히 파악하셨네요.";
+                studentRecord.mod1QuizPassed = true;
+                updateIndices(3, 0);
+                setTimeout(() => {
+                    mod1QuizIdx = (mod1QuizIdx + 1) % mod1QuizList.length;
+                    loadMod1Quiz();
+                }, 2500);
+            } else {
+                fb.className = "text-xs p-3 rounded-lg bg-red-950/40 text-red-300 border border-red-800 font-medium";
+                fb.innerHTML = "❌ 아쉽습니다. 1단계 본문 내용을 다시 읽어보세요!";
+            }
+        }
+
+        // Module 1 Choice Handler
+        function handleMod1Choice(type) {
+            const fb = document.getElementById('mod1-feedback');
+            fb.classList.remove('hidden');
+            if (type === 'hero') {
+                updateIndices(10, -10);
+                fb.innerHTML = "✅ <strong>원칙 준수 선택:</strong> 민주적 가치를 존중하여 독재 지수가 하락하고 혁명 수호 지수가 상승했습니다. 하지만 실제 역사 속 나폴레옹은 권력 확립을 택했습니다.";
+            } else {
+                updateIndices(-15, 20);
+                fb.innerHTML = "👑 <strong>권력 장악 선택:</strong> 역사적 팩트대로 투표 수치(육군 12만➔40만)를 조작하여 황제권을 공고히 하였습니다. 독재 지수가 크게 상승했습니다!";
+            }
+        }
+
+        // Module 2 Policy Classification (6 items)
+        let classifiedCount = 0;
+        const classifiedSet = new Set();
+        function classifyPolicy(policyKey, view) {
+            const status = document.getElementById('mod2-status');
+            if (!classifiedSet.has(policyKey)) {
+                classifiedSet.add(policyKey);
+                classifiedCount++;
+                studentRecord.policiesClassified = classifiedCount;
+                saveRecordLocally();
+            }
+            if (view === 'hero') {
+                updateIndices(4, 0);
+            } else {
+                updateIndices(0, 4);
+            }
+            status.innerHTML = `✅ 정책 분류 진행 중 (${classifiedCount}/6 완료)! 영웅적 업적과 독재적 그림자의 양면성을 모두 확인해 보세요.`;
+            if (classifiedCount === 6) {
+                status.innerHTML = `🎉 6대 핵심 정책 분류를 모두 완료했습니다! 영웅과 독재자의 두 얼굴을 완벽하게 파악하셨습니다.`;
+            }
+        }
+
+        // Module 3 Custom Image Loader & Comment Saving
+        function loadCustomImage() {
+            const url = document.getElementById('custom-image-url').value.trim();
+            if (url) {
+                document.getElementById('dynamic-img-art').src = url;
+                document.getElementById('dynamic-img-beethoven').src = url;
+                alert("입력하신 이미지 주소가 성공적으로 적용되었습니다!");
+            } else {
+                alert("올바른 이미지 URL 주소를 입력해 주세요.");
+            }
+        }
+
+        function saveUserComment(type) {
+            const val = document.getElementById(`comment-${type}`).value.trim();
+            const msg = document.getElementById(`save-msg-${type}`);
+            if (val) {
+                if (type === 'art') studentRecord.commentArt = val;
+                if (type === 'beethoven') studentRecord.commentBeethoven = val;
+                saveRecordLocally();
+
+                msg.classList.remove('hidden');
+                updateIndices(3, 3);
+                setTimeout(() => msg.classList.add('hidden'), 3000);
+            } else {
+                alert("의견 내용을 입력해 주세요.");
+            }
+        }
+
+        // Module 4 Campaign Opinion Saving (No preset examples)
+        function saveCampaignOpinion(type) {
+            const val = document.getElementById(`opinion-${type}`).value.trim();
+            const msg = document.getElementById(`msg-${type}`);
+            if (val) {
+                if (type === 'russia') studentRecord.opinionRussia = val;
+                if (type === 'spain') studentRecord.opinionSpain = val;
+                if (type === 'bivouac') studentRecord.opinionBivouac = val;
+                saveRecordLocally();
+
+                msg.classList.remove('hidden');
+                updateIndices(3, 3);
+                setTimeout(() => msg.classList.add('hidden'), 3000);
+            } else {
+                alert("의견 내용을 입력해 주세요.");
+            }
+        }
+
+        // Module 5 Gemini AI API Integration
+        async function sendChatMessage() {
+            const input = document.getElementById('user-chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const container = document.getElementById('chat-container');
+            
+            // Append User Message
+            const userMsg = document.createElement('div');
+            userMsg.className = "bg-blue-950/60 p-3 rounded-lg max-w-[80%] text-xs text-stone-200 self-end border border-blue-900";
+            userMsg.innerHTML = `👤 <strong>${studentInfo.name || '학생'}:</strong> ${text}`;
+            container.appendChild(userMsg);
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+
+            // Append Loading AI Response
+            const aiMsg = document.createElement('div');
+            aiMsg.className = "bg-stone-800 p-3 rounded-lg max-w-[80%] text-xs text-stone-300 self-start border border-stone-700";
+            aiMsg.innerHTML = `🏛️ <strong>역사 재판소 판사:</strong> 증거를 검토 중입니다...`;
+            container.appendChild(aiMsg);
+            container.scrollTop = container.scrollHeight;
+
+            const systemPrompt = "당신은 '역사 재판소의 판사'입니다. 학습자가 나폴레옹의 정책을 평가할 때, 소스 컨텍스트의 구체적 사례(예: 아이티 학살, 투표 조작 등)를 언급하면 '날카로운 증거 제시입니다'라고 칭찬하십시오. 만약 학습자가 한쪽 측면만 옹호한다면 반대편의 역사적 팩트를 제시하며 비판적 사고를 유도하십시오. 답변은 항상 중학교 2학년 수준의 친절하고 명확한 문체를 유지하십시오.";
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: text }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            try {
+                let response = null;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    try {
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (response.ok) break;
+                    } catch (e) {
+                        await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000));
+                    }
+                }
+
+                if (response && response.ok) {
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+                    if (candidate && candidate.content?.parts?.[0]?.text) {
+                        aiMsg.innerHTML = `🏛️ <strong>역사 재판소 판사:</strong> ${candidate.content.parts[0].text}`;
+                    } else {
+                        aiMsg.innerHTML = `🏛️ <strong>역사 재판소 판사:</strong> 흥미로운 의견입니다만, 아이티 학살이나 나폴레옹 법전 같은 구체적 팩트를 함께 고려해 볼까요?`;
+                    }
+                } else {
+                    aiMsg.innerHTML = `🏛️ <strong>역사 재판소 판사:</strong> 훌륭한 역사적 시각입니다! 나폴레옹의 영웅적 측면과 독재적 양면성을 모두 검토해 보세요.`;
+                }
+            } catch (err) {
+                aiMsg.innerHTML = `🏛️ <strong>역사 재판소 판사:</strong> 날카로운 통찰이네요! 프랑스 혁명 정신과 독재 사이의 균형을 잘 살펴보았습니다.`;
+            }
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Module 6 Quiz Data (10 Total items)
+        const quizData = [
+            {
+                type: "mc",
+                q: "1. 나폴레옹의 출생지로, 이탈리아 제노바 영토였다가 프랑스로 편입된 섬은?",
+                options: ["코르시카 섬", "세인트헬레나 섬", "엘바 섬", "시칠리아 섬"],
+                answer: 0
+            },
+            {
+                type: "mc",
+                q: "2. 나폴레옹 법전 조항 중 여성의 권리를 제한한 대표적 조항 번호는?",
+                options: ["제1200조", "제1549조", "제1789조", "제1804조"],
+                answer: 1
+            },
+            {
+                type: "mc",
+                q: "3. 영국을 경제적으로 고립시키기 위해 유럽 대륙과 영국의 교역을 금지한 명령은?",
+                options: ["대륙 봉쇄령", "청야 작전", "18브뤼메르 쿠데타", "통령 정부령"],
+                answer: 0
+            },
+            {
+                type: "mc",
+                q: "4. 나폴레옹의 러시아 원정 실패의 결정적 원인 두 가지는?",
+                options: ["영국 해군의 기습과 해전 패배", "러시아의 청야 작전과 극심한 추위", "군대의 식량 자급 자족 성공", "코르시카 독립군의 반란"],
+                answer: 1
+            },
+            {
+                type: "mc",
+                q: "5. 나폴레옹이 황제 즉위 투표 당시 조작한 육군 찬성표 수치는?",
+                options: ["123,002표를 400,000표로 부풀림", "16,224표를 50,000표로 부풀림", "10,000표를 100,000표로 부풀림", "투표를 아예 조작하지 않음"],
+                answer: 0
+            },
+            {
+                type: "text",
+                q: "[주관식 6] 다비드의 명화 '알프스 산맥을 넘는 나폴레옹'에서 사실과 다르게 미화된 ‘이동 수단’을 쓰시오.",
+                expected: "노새"
+            },
+            {
+                type: "text",
+                q: "[주관식 7] '조끼 속 오른손' 포즈가 조선의 개화파 인물(김옥균 등)에게 미친 영향은?",
+                expected: "근대화론자"
+            },
+            {
+                type: "essay",
+                q: "[서술형 8] 나폴레옹이 아이티 식민지에서 저지른 반인권적 만행을 기술하시오.",
+                hint: "노예제 부활, 12세 미만 제외 학살, 수중 처형 등의 키워드가 포함되어야 합니다."
+            },
+            {
+                type: "essay",
+                q: "[서술형 9] 에스파냐 민중들이 나폴레옹 군대에 저항한 이유를 '민족주의' 관점에서 쓰시오.",
+                hint: "주권 침해, 민중 학살, 외세 침략에 맞선 민족적 자각 등의 내용이 포함되어야 합니다."
+            },
+            {
+                type: "essay",
+                q: "[서술형 10] 베토벤이 나폴레옹에게 실망하여 '영웅 교향곡'의 헌사를 찢은 이유는?",
+                hint: "혁명 정신 저버림, 황제 즉위, 독재자 변질 등의 내용이 포함되어야 합니다."
+            }
+        ];
+
+        let currentQuiz = 0;
+        let correctQuizCount = 0;
+
+        function loadQuiz() {
+            if (currentQuiz >= quizData.length) {
+                document.getElementById('quiz-box').classList.add('hidden');
+                document.getElementById('badge-box').classList.remove('hidden');
+                studentRecord.completed = true;
+                studentRecord.quizScore = correctQuizCount;
+                saveRecordLocally();
+                return;
+            }
+            const qObj = quizData[currentQuiz];
+            document.getElementById('quiz-progress').innerText = `문제 ${currentQuiz + 1} / ${quizData.length}`;
+            document.getElementById('quiz-question').innerText = qObj.q;
+            
+            const optContainer = document.getElementById('quiz-options');
+            const textContainer = document.getElementById('quiz-text-input-container');
+            const nextBtn = document.getElementById('next-quiz-btn');
+            const fb = document.getElementById('quiz-feedback');
+            
+            optContainer.innerHTML = '';
+            textContainer.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            fb.classList.add('hidden');
+
+            if (qObj.type === 'mc') {
+                optContainer.classList.remove('hidden');
+                qObj.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "p-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-xs text-stone-200 border border-stone-700 text-left transition font-bold";
+                    btn.innerText = opt;
+                    btn.onclick = () => checkQuizMC(idx, qObj.answer);
+                    optContainer.appendChild(btn);
+                });
+            } else {
+                optContainer.classList.add('hidden');
+                textContainer.classList.remove('hidden');
+                document.getElementById('quiz-user-input').value = '';
+            }
+        }
+
+        function checkQuizMC(selected, correct) {
+            const fb = document.getElementById('quiz-feedback');
+            fb.classList.remove('hidden');
+            if (selected === correct) {
+                correctQuizCount++;
+                fb.className = "text-sm font-medium p-3 rounded-lg bg-green-950/40 text-green-300 border border-green-800";
+                fb.innerHTML = "🎉 정답입니다! 역사적 사실을 정확하게 이해하셨네요.";
+                updateIndices(5, 0);
+                document.getElementById('next-quiz-btn').classList.remove('hidden');
+            } else {
+                fb.className = "text-sm font-medium p-3 rounded-lg bg-red-950/40 text-red-300 border border-red-800";
+                fb.innerHTML = "❌ 아쉽습니다. 다시 학습 모듈 내용을 확인해 보세요!";
+            }
+        }
+
+        function submitTextAnswer() {
+            const val = document.getElementById('quiz-user-input').value.trim();
+            const fb = document.getElementById('quiz-feedback');
+            fb.classList.remove('hidden');
+            if (val.length > 2) {
+                correctQuizCount++;
+                fb.className = "text-sm font-medium p-3 rounded-lg bg-green-950/40 text-green-300 border border-green-800";
+                fb.innerHTML = "🎉 훌륭한 서술 및 주관식 답변입니다! 역사적 사실과 비판적 사고가 잘 드러났습니다.";
+                updateIndices(5, 5);
+                document.getElementById('next-quiz-btn').classList.remove('hidden');
+            } else {
+                fb.className = "text-sm font-medium p-3 rounded-lg bg-amber-950/40 text-amber-300 border border-amber-800";
+                fb.innerHTML = "⚠️ 답변이 너무 짧습니다. 좀 더 구체적인 역사적 배경이나 키워드를 포함하여 작성해 보세요.";
+            }
+        }
+
+        function nextQuizItem() {
+            currentQuiz++;
+            loadQuiz();
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            loadMod1Quiz();
+            loadQuiz();
+        };
+    </script>
+</body>
+</html>
